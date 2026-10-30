@@ -22,6 +22,7 @@
     </div>
     <div class="chips">
       <span id="chipGps" class="chip" data-state="off">GPS · off</span>
+      <span id="chipImu" class="chip" data-state="off">Capteur · off</span>
       <span id="chipEngine" class="chip" data-state="off">Moteur · coupé</span>
     </div>
   </header>
@@ -79,6 +80,7 @@
 
   <footer>
     <p><b>Comment ça marche :</b> ouvrez ce site dans le navigateur de la voiture, choisissez un moteur, appuyez sur <b>START</b> et roulez. La vitesse vient du GPS, et la charge moteur est déduite de votre accélération. Le GPS ne se met à jour qu'environ une fois par seconde, d'où un léger décalage. En <b>Démo</b>, maintenez « Accélérer » (ou ↑ au clavier).</p>
+    <p><b>Pour une réaction instantanée :</b> ouvrez le site sur un téléphone <b>fixé dans un support</b> et relié en Bluetooth à la voiture. Son accéléromètre détecte immédiatement vos accélérations. Le calibrage est automatique (indicateur « Capteur ») après quelques accélérations et freinages francs, puis mémorisé tant que le téléphone reste dans la même position.</p>
     <p class="warn">Gardez un volume raisonnable et restez attentif à la route : les sirènes et klaxons doivent rester audibles.</p>
   </footer>
 

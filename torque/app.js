@@ -1,4 +1,5 @@
 import { EngineAudio, PROFILES } from './engine.js';
+import { GpsSource, MotionSensor, SpeedEstimator } from './motion.js';
 
 const $ = (s) => document.querySelector(s);
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -53,63 +54,6 @@ class Drivetrain {
     this.rpm = approach(this.rpm, target, this.shiftTimer > 0.3 ? 22 : 9, dt);
     if (this.rpm >= p.limiter - 30 && thr > 0.5) { this.rpm -= 380; ev.push('limiter'); }
     return this.rpm;
-  }
-}
-
-// ---------- Vitesse GPS + estimation de l'accélérateur ----------
-function haversine(a, b) {
-  const R = 6371000, toRad = (x) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-class GpsSpeed {
-  constructor(onStatus) { this.onStatus = onStatus; this.reset(); }
-  reset() { this.v = 0; this.accel = 0; this.last = null; this.recvAt = 0; this.fixes = 0; }
-  start() {
-    if (!('geolocation' in navigator)) { this.onStatus('err', 'GPS indisponible'); return; }
-    if (this.id != null) return;
-    this.onStatus('wait', 'GPS · recherche…');
-    this.id = navigator.geolocation.watchPosition(
-      (pos) => this._fix(pos),
-      (err) => this.onStatus('err', err.code === 1 ? 'GPS · refusé' : 'GPS · erreur'),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
-    );
-  }
-  stop() {
-    if (this.id != null) navigator.geolocation.clearWatch(this.id);
-    this.id = null; this.reset();
-    this.onStatus('off', 'GPS · off');
-  }
-  _fix(pos) {
-    const c = pos.coords, t = pos.timestamp;
-    const here = { lat: c.latitude, lon: c.longitude, t };
-    let v = Number.isFinite(c.speed) && c.speed >= 0 ? c.speed : null;
-    if (v === null && this.last) {
-      const dt = (t - this.last.t) / 1000;
-      v = dt > 0.2 ? haversine(this.last, here) / dt : this.v;
-    }
-    v = v ?? 0;
-    if (v < 0.7) v = 0;
-    if (this.last) {
-      const dt = (t - this.last.t) / 1000;
-      if (dt > 0.2 && dt < 5) this.accel = lerp(this.accel, (v - this.v) / dt, 0.6);
-    }
-    this.v = v; this.last = here; this.recvAt = performance.now(); this.fixes++;
-    this.onStatus('ok', `GPS · ±${Math.round(c.accuracy)} m`);
-  }
-  // Extrapolation entre deux positions (le GPS ne donne qu'environ 1 mesure/s)
-  speed(nowPerf) {
-    if (!this.recvAt) return 0;
-    const age = (nowPerf - this.recvAt) / 1000;
-    if (age > 4) { this.accel = 0; this.onStatus('wait', 'GPS · signal faible'); }
-    return Math.max(0, this.v + this.accel * Math.min(age, 1.2));
-  }
-  throttle() {
-    if (this.v === 0 && this.accel < 0.3) return 0;
-    if (this.accel < -0.3) return 0;
-    return clamp(0.18 + this.accel / 2.6, 0, 1);
   }
 }
 
@@ -214,8 +158,27 @@ const profile = () => PROFILES[state.profileKey];
 const drive = new Drivetrain(profile());
 state.rpm = profile().idle;
 
-const chipGps = $('#chipGps'), chipEngine = $('#chipEngine');
-const gps = new GpsSpeed((kind, text) => { chipGps.textContent = text; chipGps.dataset.state = kind; });
+const chipGps = $('#chipGps'), chipEngine = $('#chipEngine'), chipImu = $('#chipImu');
+const setChip = (el) => (kind, text) => { el.textContent = text; el.dataset.state = kind; };
+const estimator = new SpeedEstimator();
+const imu = new MotionSensor(setChip(chipImu));
+let lastFix = null;
+const gps = new GpsSource((v, sigma) => {
+  const t = performance.now();
+  if (lastFix && t - lastFix.t < 5000) imu.learn((v - lastFix.v) / ((t - lastFix.t) / 1000));
+  lastFix = { v, t };
+  estimator.update(v, sigma);
+}, setChip(chipGps));
+
+function startSensors() {
+  estimator.reset();
+  lastFix = null;
+  gps.start();
+}
+function stopSensors() {
+  gps.stop();
+  imu.stop();
+}
 let wakeLock = null;
 
 const ALPHAS = [12, 14, 22, 28, 35, 40, 45, 50, 60];
@@ -264,7 +227,9 @@ function setMode(mode) {
   document.querySelectorAll('.mode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
   document.body.dataset.mode = mode;
   state.simV = state.kmh / 3.6;
-  if (state.running) mode === 'gps' ? gps.start() : gps.stop();
+  if (state.running) {
+    if (mode === 'gps') { imu.start(); startSensors(); } else stopSensors();
+  }
 }
 
 async function toggleEngine() {
@@ -275,15 +240,17 @@ async function toggleEngine() {
     chipEngine.textContent = 'Moteur · en marche';
     chipEngine.dataset.state = 'ok';
     drive.setProfile(profile());
+    // Demandé avant tout "await" : iOS n'accorde l'accès aux capteurs que pendant le clic
+    const imuReady = state.mode === 'gps' ? imu.start() : null;
     await audio.start(profile(), state.volume);
-    if (state.mode === 'gps') gps.start();
+    if (state.mode === 'gps') { await imuReady; startSensors(); }
     try { wakeLock = await navigator.wakeLock?.request('screen'); } catch {}
   } else {
     state.running = false;
     btn.classList.remove('on');
     chipEngine.textContent = 'Moteur · coupé';
     chipEngine.dataset.state = 'off';
-    gps.stop();
+    stopSensors();
     audio.stop();
     try { await wakeLock?.release(); } catch {}
     wakeLock = null;
@@ -324,8 +291,10 @@ function frame(now) {
   if (state.mode === 'demo') {
     state.kmh = simulate(dt);
   } else if (state.running) {
-    state.kmh = approach(state.kmh, gps.speed(now) * 3.6, 6, dt);
-    state.thr = approach(state.thr, gps.throttle(), 4, dt);
+    estimator.predict(dt, imu.accel());
+    // Avec l'accéléromètre la charge est quasi instantanée, on peut donc la suivre plus vite
+    state.kmh = approach(state.kmh, estimator.v * 3.6, 10, dt);
+    state.thr = approach(state.thr, estimator.throttle(), estimator.imu ? 12 : 5, dt);
   } else {
     state.kmh = approach(state.kmh, 0, 3, dt);
     state.thr = approach(state.thr, 0, 6, dt);
