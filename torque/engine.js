@@ -20,6 +20,7 @@ export const PROFILES = {
       muffler: [450, 2800, 2200], body: [95, 1.1, 6], presence: [1800, 1, 3],
       intake: [240, 2.5], intakeMix: 0.35, roar: [900, 1.2], roarMix: 0.1,
       mech: [3500], mechMix: 0.03, pops: 1, turbo: 0,
+      sharp: 0.5, radiate: 0.5, radHz: 140, burble: 0.35, bang: 0.7, rasp: 1.5, raspF: [1800, 0.6],
       width: 0.55, cross: 0.12, exGain: 1, drive: 1.8, gain: 0.5,
     },
   },
@@ -36,6 +37,7 @@ export const PROFILES = {
       muffler: [900, 4500, 4000], body: [210, 1.2, 5], presence: [2600, 1.2, 4],
       intake: [480, 3], intakeMix: 0.55, roar: [1600, 1.5], roarMix: 0.35,
       mech: [4200], mechMix: 0.08, pops: 0.55, turbo: 0,
+      sharp: 0.8, radiate: 0.6, radHz: 180, burble: 0.2, bang: 0.5, whine: 0.12, rasp: 2, raspF: [3000, 0.6],
       width: 0.4, cross: 0.35, exGain: 1, drive: 2.4, gain: 0.5,
     },
   },
@@ -52,6 +54,7 @@ export const PROFILES = {
       muffler: [1000, 5000, 4500], body: [170, 1.1, 5], presence: [3000, 1, 4],
       intake: [560, 3], intakeMix: 0.5, roar: [1800, 1.4], roarMix: 0.4,
       mech: [4500], mechMix: 0.05, pops: 0.75, turbo: 0,
+      sharp: 0.8, radiate: 0.6, radHz: 180, burble: 0.25, bang: 0.55, whine: 0.08, rasp: 1.5, raspF: [3000, 0.6],
       width: 0.45, cross: 0.3, exGain: 1, drive: 2.6, gain: 0.5,
     },
   },
@@ -68,6 +71,7 @@ export const PROFILES = {
       muffler: [1300, 6000, 6000], body: [240, 1, 4], presence: [3500, 1, 5],
       intake: [650, 3], intakeMix: 0.55, roar: [2200, 1.5], roarMix: 0.5,
       mech: [5000], mechMix: 0.04, pops: 0.4, turbo: 0,
+      sharp: 0.7, radiate: 0.6, radHz: 200, burble: 0.15, bang: 0.4, whine: 0.05, rasp: 1, raspF: [3500, 0.6],
       width: 0.4, cross: 0.45, exGain: 1, drive: 2.2, gain: 0.5,
     },
   },
@@ -76,15 +80,20 @@ export const PROFILES = {
     cylinders: 4, idle: 900, redline: 7200, limiter: 7400,
     gears: [55, 88, 120, 155, 190, 230],
     sound: {
+      // Ligne courte quasi droite (silencieux de compétition), turbo avec flutter, anti-lag
+      // et boîte à pignons droits : la signature sonore d'une voiture de rallye
       angles: evenAngles(4), banks: [0, 0, 0, 0],
       imbalance: 0.05, runnerSpread: 0.0003, soundSpeed: 480,
-      header: 0.6, headerRefl: -0.5, headerDamp: 0.5,
-      tail: 2.0, tailRefl: -0.6, tailDamp: 0.3,
-      pulseDeg: 85, noise: 0.45, lope: 0.2,
-      muffler: [500, 3000, 2000], body: [130, 1.2, 6], presence: [2000, 1, 3],
-      intake: [380, 2.5], intakeMix: 0.25, roar: [1200, 1.2], roarMix: 0.15,
-      mech: [3800], mechMix: 0.05, pops: 1.3, turbo: 1,
-      width: 0.15, cross: 0, exGain: 1, drive: 3, gain: 0.36,
+      header: 0.55, headerRefl: -0.5, headerDamp: 0.5,
+      tail: 1.3, tailRefl: -0.55, tailDamp: 0.35,
+      pulseDeg: 90, noise: 0.5, lope: 0.2,
+      muffler: [700, 3800, 3200], body: [140, 1.2, 5], presence: [2600, 0.9, 4],
+      intake: [380, 2.5], intakeMix: 0.12, roar: [1200, 1.2], roarMix: 0.12,
+      mech: [3800], mechMix: 0.06, pops: 1.3,
+      sharp: 1.5, radiate: 0.7, radHz: 160, burble: 0.4, bang: 1,
+      rasp: 5, raspF: [2400, 0.6], idleAmp: 0.45,
+      turbo: 1, turboF: [1600, 6200], flutter: 1, als: 1, bov: 0, whine: 1,
+      width: 0.15, cross: 0, exGain: 1, drive: 1.2, gain: 0.4,
     },
   },
 };
@@ -173,6 +182,10 @@ export class EngineAudio {
 
   liftOff() {
     if (this.running) this.node.port.postMessage({ type: 'liftoff' });
+  }
+
+  setGear(gear) {
+    if (this.node) this.node.port.postMessage({ type: 'gear', gear });
   }
 
   // Coupure d'allumage pendant le passage de rapport (avec "brap" à pleine charge)

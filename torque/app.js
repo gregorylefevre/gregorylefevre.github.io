@@ -315,7 +315,7 @@ function simulate(dt) {
   return state.simV * 3.6;
 }
 
-let prevThr = 0, last = performance.now(), uiTimer = 0;
+let prevThr = 0, prevGear = -1, last = performance.now(), uiTimer = 0;
 function frame(now) {
   const dt = clamp((now - last) / 1000, 0, 0.1);
   last = now;
@@ -341,6 +341,7 @@ function frame(now) {
       else if (e === 'limiter') audio.limiter();
     }
     if (prevThr > 0.55 && state.thr < 0.25) audio.liftOff(state.rpm);
+    if (state.gear !== prevGear) { prevGear = state.gear; audio.setGear(state.gear); }
     audio.update(state.rpm, state.thr, dt);
   } else {
     state.rpm = approach(state.rpm, 0, 4, dt);
