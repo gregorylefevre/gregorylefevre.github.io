@@ -189,6 +189,7 @@ footer { color: var(--muted); font-size: 0.85rem; line-height: 1.6; max-width: 9
 footer p { margin: 0 0 6px; }
 footer b { color: var(--text); font-weight: 600; }
 footer .warn { color: #e0a43a; }
+footer .version { font-size: 0.75rem; opacity: 0.6; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1320px) { .engines { grid-template-columns: repeat(3, 1fr); } }

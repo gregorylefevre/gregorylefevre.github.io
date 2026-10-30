@@ -108,7 +108,7 @@ export class EngineAudio {
 
   async _init() {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    await this.ctx.audioWorklet.addModule(new URL('./engine-worklet.js', import.meta.url));
+    await this.ctx.audioWorklet.addModule(new URL('./engine-worklet.js?v=5', import.meta.url));
     this.node = new AudioWorkletNode(this.ctx, 'engine', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
 
     // Petite correction "habitacle" : basses renforcées, haut-médium adouci

@@ -1,5 +1,5 @@
-import { EngineAudio, PROFILES } from './engine.js';
-import { GpsSource, MotionSensor, SpeedEstimator } from './motion.js';
+import { EngineAudio, PROFILES } from './engine.js?v=5';
+import { GpsSource, MotionSensor, SpeedEstimator } from './motion.js?v=5';
 
 const $ = (s) => document.querySelector(s);
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
