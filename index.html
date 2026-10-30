@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07080c">
+  <title>TORQUE · Le son d'un moteur thermique dans votre Tesla</title>
+  <meta name="description" content="Donnez à votre voiture électrique le son d'un V8, V10, V12 ou flat-6 qui suit votre vitesse réelle.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 44a24 24 0 1 1 48 0' fill='none' stroke='%23ff5a1f' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M32 44 46 22' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><div class="glow"></div><div class="grid"></div></div>
+
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 44a24 24 0 1 1 48 0" /><path class="n" d="M32 44 46 22" /></svg>
+      <span>TORQUE</span>
+    </div>
+    <div class="chips">
+      <span id="chipGps" class="chip" data-state="off">GPS · off</span>
+      <span id="chipEngine" class="chip" data-state="off">Moteur · coupé</span>
+    </div>
+  </header>
+
+  <main class="dash">
+    <section class="panel gauge">
+      <canvas id="tach" aria-label="Compte-tours"></canvas>
+    </section>
+
+    <section class="panel readout">
+      <div class="engine-title">
+        <span class="label">Moteur</span>
+        <h1 id="engineName">V8 Muscle</h1>
+        <p id="engineSpec"></p>
+      </div>
+
+      <div class="speed">
+        <span id="speed">0</span><small>km/h</small>
+      </div>
+
+      <div class="stats">
+        <div><span class="label">Régime</span><b id="rpm">0</b><small>tr/min</small></div>
+        <div><span class="label">Rapport</span><b id="gearTxt">N</b></div>
+      </div>
+
+      <div class="throttle">
+        <div class="row"><span class="label">Charge moteur</span><span id="throttlePct">0 %</span></div>
+        <div class="bar"><i id="throttleBar"></i></div>
+      </div>
+
+      <div class="mode" role="tablist" aria-label="Mode">
+        <button data-mode="gps" class="active">Route · GPS</button>
+        <button data-mode="demo">Démo</button>
+      </div>
+
+      <div class="pedals">
+        <button id="brake" class="pedal brake" type="button">Frein</button>
+        <button id="pedal" class="pedal gas" type="button">Accélérer</button>
+      </div>
+    </section>
+  </main>
+
+  <section class="engines" id="engines" aria-label="Choix du moteur"></section>
+
+  <section class="controls">
+    <button id="start" class="start" type="button" aria-label="Démarrer / couper le moteur">
+      <span class="ring"></span>
+      <span class="lbl"><b>START</b><small>STOP</small></span>
+    </button>
+    <label class="volume">
+      <span class="label">Volume</span>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
+    </label>
+  </section>
+
+  <footer>
+    <p><b>Comment ça marche :</b> ouvrez ce site dans le navigateur de la voiture, choisissez un moteur, appuyez sur <b>START</b> et roulez. La vitesse vient du GPS, et la charge moteur est déduite de votre accélération. Le GPS ne se met à jour qu'environ une fois par seconde, d'où un léger décalage. En <b>Démo</b>, maintenez « Accélérer » (ou ↑ au clavier).</p>
+    <p class="warn">Gardez un volume raisonnable et restez attentif à la route : les sirènes et klaxons doivent rester audibles.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
